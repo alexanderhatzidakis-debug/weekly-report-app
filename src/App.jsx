@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from "react";
-import emailjs from "@emailjs/browser";
 import html2pdf from "html2pdf.js";
 
 const sites = [
@@ -8,33 +7,101 @@ const sites = [
   "Chuck and Blade Ramsgate",
   "Chuck and Blade Maidstone",
   "Bare Bones Rochester",
+  "Bare Bones Canterbury",
 ];
 
-const reportTypes = ["FOH", "BOH", "Online"];
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const reportTypes = ["FOH", "GM", "BOH", "Online"];
+
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 
 const emptyReviews = () =>
   days.reduce((acc, day) => {
-    acc[day] = { reviews: "", one: "", two: "", three: "", four: "", five: "" };
+    acc[day] = {
+      reviews: "",
+      one: "",
+      two: "",
+      three: "",
+      four: "",
+      five: "",
+    };
     return acc;
   }, {});
 
+const reportConfig = {
+  FOH: {
+    intro: "Google and Trip Advisor weekly front of house report.",
+    currentPlatforms: ["Google", "Trip Advisor"],
+    monthlyPlatforms: ["Google", "Trip Advisor"],
+    errorLabels: [],
+    showReviews: false,
+    reviewReplyQuestion: true,
+  },
+
+  GM: {
+    intro:
+      "General manager report covering public ratings, Uber error rate and review summary.",
+    currentPlatforms: ["Google", "Trip Advisor", "Uber"],
+    monthlyPlatforms: ["Google", "Trip Advisor", "Uber"],
+    errorLabels: ["This month error rate"],
+    showReviews: true,
+    reviewReplyQuestion: true,
+  },
+
+  BOH: {
+    intro: "Back of house Uber ratings and error rate report.",
+    scoreLabels: [
+      "Overall public score",
+      "This week’s score",
+      "Last week’s report score",
+      "This month score",
+    ],
+    errorLabels: [
+      "This week’s score",
+      "Last week’s report score",
+      "This month score",
+    ],
+    showReviews: false,
+    reviewReplyQuestion: false,
+  },
+
+  Online: {
+    intro: "Online Uber platform ratings and error rate report.",
+    scoreLabels: [
+      "Overall public score",
+      "This week’s score",
+      "Last week’s report score",
+      "This month score",
+    ],
+    errorLabels: [
+      "This week’s error rate",
+      "Last week’s report error rate",
+      "This month error rate",
+    ],
+    showReviews: false,
+    reviewReplyQuestion: true,
+  },
+};
+
 export default function App() {
   const reportRef = useRef(null);
-  const [sent, setSent] = useState(false);
 
   const [form, setForm] = useState({
     manager: "",
     site: "",
     week: "",
     reportType: "FOH",
-    googleRating: "",
-    tripAdvisorRating: "",
-    googleMonth: "",
-    tripAdvisorMonth: "",
-    uberRating: "",
-    uberMonth: "",
-    uberErrorRate: "",
+    currentRatings: {},
+    monthlyRatings: {},
+    uberScores: {},
+    errorRates: {},
     reviews: emptyReviews(),
     allReviewsReplied: "",
     wentWell: "",
@@ -43,7 +110,7 @@ export default function App() {
     actionPlan: "",
   });
 
-  const isFOH = form.reportType === "FOH";
+  const config = reportConfig[form.reportType];
 
   const totals = useMemo(() => {
     return Object.values(form.reviews).reduce(
@@ -61,90 +128,62 @@ export default function App() {
   }, [form.reviews]);
 
   function updateField(field, value) {
-    setSent(false);
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function updateReview(day, field, value) {
-    setSent(false);
+  function updateNested(section, key, value) {
     setForm((prev) => ({
       ...prev,
-      reviews: {
-        ...prev.reviews,
-        [day]: { ...prev.reviews[day], [field]: value },
+      [section]: {
+        ...prev[section],
+        [key]: value,
       },
     }));
   }
 
-  function buildReportText() {
-    return `
-Weekly Performance Report
-
-Manager: ${form.manager}
-Site: ${form.site}
-Week Starting: ${form.week}
-Report Type: ${form.reportType}
-
-${isFOH ? `Google Rating: ${form.googleRating}
-Trip Advisor Rating: ${form.tripAdvisorRating}
-Google Monthly Average: ${form.googleMonth}
-Trip Advisor Monthly Average: ${form.tripAdvisorMonth}` : `Uber Rating: ${form.uberRating}
-Uber Monthly Average: ${form.uberMonth}
-Uber Error Rate: ${form.uberErrorRate}%`}
-
-Review Totals:
-Total Reviews: ${totals.reviews}
-1 Star: ${totals.one}
-2 Star: ${totals.two}
-3 Star: ${totals.three}
-4 Star: ${totals.four}
-5 Star: ${totals.five}
-
-All reviews replied to:
-${form.allReviewsReplied}
-
-What went well:
-${form.wentWell}
-
-What didn’t go well:
-${form.didntGoWell}
-
-Areas needing improvement:
-${form.improvements}
-
-Action plan:
-${form.actionPlan}
-`;
-  }
-
-  async function sendEmail() {
-    try {
-      await emailjs.send(
-        "service_rw8rmhd",
-        "template_1bm1x6r",
-        { reportText: buildReportText() },
-        "mK6eusbx3CUu2NYA4"
-      );
-
-      setSent(true);
-      alert("Report emailed successfully");
-    } catch (error) {
-      console.error(error);
-      alert("Email failed to send");
-    }
+  function updateReview(day, field, value) {
+    setForm((prev) => ({
+      ...prev,
+      reviews: {
+        ...prev.reviews,
+        [day]: {
+          ...prev.reviews[day],
+          [field]: value,
+        },
+      },
+    }));
   }
 
   function downloadPDF() {
-    const filename = `${form.site || "Weekly Report"} - ${form.week || "No Date"}.pdf`;
+    const filename = `${form.reportType || "Report"} Report - ${
+      form.site || "Site"
+    } - ${form.week || "Week"}.pdf`;
 
     html2pdf()
-      .from(reportRef.current)
       .set({
-        margin: 8,
+        margin: [14, 10, 14, 10],
         filename,
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        image: {
+          type: "jpeg",
+          quality: 1,
+        },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          scrollY: 0,
+          windowWidth: reportRef.current.scrollWidth,
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+        },
+        pagebreak: {
+          mode: ["css", "legacy"],
+          avoid: [".section", ".ratingBox", ".reflectionBox", "tr"],
+        },
       })
+      .from(reportRef.current)
       .save();
   }
 
@@ -153,157 +192,273 @@ ${form.actionPlan}
       <div style={styles.wrapper}>
         <header style={styles.header}>
           <div style={styles.logo}>C&B</div>
+
           <div>
             <h1 style={styles.title}>Weekly Performance Report</h1>
             <p style={styles.subtitle}>
-              Select the site, choose the report type, complete each section, then email or download the report.
+              Select the site, choose the report type, complete each section,
+              then save as PDF.
             </p>
           </div>
         </header>
 
-        {sent && (
-          <div style={styles.success}>
-            Report sent successfully.
-          </div>
-        )}
-
         <main ref={reportRef} style={styles.card}>
           <FormSection number="1" title="Report Details">
+            <p style={styles.helpText}>{config.intro}</p>
+
             <div style={styles.grid}>
               <Field label="Manager Name">
-                <input style={styles.input} value={form.manager} onChange={(e) => updateField("manager", e.target.value)} />
+                <input
+                  style={styles.input}
+                  value={form.manager}
+                  onChange={(e) => updateField("manager", e.target.value)}
+                />
               </Field>
 
-              <Field label="Site">
-                <select style={styles.input} value={form.site} onChange={(e) => updateField("site", e.target.value)}>
+              <Field label="Restaurant / Site">
+                <select
+                  style={styles.input}
+                  value={form.site}
+                  onChange={(e) => updateField("site", e.target.value)}
+                >
                   <option value="">Select Site</option>
-                  {sites.map((site) => <option key={site}>{site}</option>)}
+                  {sites.map((site) => (
+                    <option key={site}>{site}</option>
+                  ))}
                 </select>
               </Field>
 
               <Field label="Week Starting">
-                <input style={styles.input} type="date" value={form.week} onChange={(e) => updateField("week", e.target.value)} />
+                <input
+                  style={styles.input}
+                  type="date"
+                  value={form.week}
+                  onChange={(e) => updateField("week", e.target.value)}
+                />
               </Field>
 
               <Field label="Report Type">
-                <select style={styles.input} value={form.reportType} onChange={(e) => updateField("reportType", e.target.value)}>
-                  {reportTypes.map((type) => <option key={type}>{type}</option>)}
+                <select
+                  style={styles.input}
+                  value={form.reportType}
+                  onChange={(e) => updateField("reportType", e.target.value)}
+                >
+                  {reportTypes.map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
                 </select>
               </Field>
             </div>
           </FormSection>
 
-          <FormSection number="2" title="Platform Ratings">
-            <p style={styles.helpText}>
-              {isFOH
-                ? "Enter Google and Trip Advisor ratings for this week and the current monthly averages."
-                : "Enter Uber ratings and error rate for this week and the current monthly average."}
-            </p>
-
-            <div style={styles.grid}>
-              {isFOH ? (
+          {(config.currentPlatforms || config.monthlyPlatforms) && (
+            <FormSection number="2" title="Platform Ratings">
+              {config.currentPlatforms && (
                 <>
-                  <Field label="Google Rating">
-                    <input style={styles.input} value={form.googleRating} onChange={(e) => updateField("googleRating", e.target.value)} />
-                  </Field>
-                  <Field label="Trip Advisor Rating">
-                    <input style={styles.input} value={form.tripAdvisorRating} onChange={(e) => updateField("tripAdvisorRating", e.target.value)} />
-                  </Field>
-                  <Field label="Google Monthly Average">
-                    <input style={styles.input} value={form.googleMonth} onChange={(e) => updateField("googleMonth", e.target.value)} />
-                  </Field>
-                  <Field label="Trip Advisor Monthly Average">
-                    <input style={styles.input} value={form.tripAdvisorMonth} onChange={(e) => updateField("tripAdvisorMonth", e.target.value)} />
-                  </Field>
-                </>
-              ) : (
-                <>
-                  <Field label="Uber Rating">
-                    <input style={styles.input} value={form.uberRating} onChange={(e) => updateField("uberRating", e.target.value)} />
-                  </Field>
-                  <Field label="Uber Monthly Average">
-                    <input style={styles.input} value={form.uberMonth} onChange={(e) => updateField("uberMonth", e.target.value)} />
-                  </Field>
-                  <Field label="Uber Error Rate %">
-                    <input style={styles.input} value={form.uberErrorRate} onChange={(e) => updateField("uberErrorRate", e.target.value)} />
-                  </Field>
+                  <h3 style={styles.subTitle}>Current Overall Ratings</h3>
+                  <RatingRows
+                    rows={config.currentPlatforms}
+                    values={form.currentRatings}
+                    onChange={(key, value) =>
+                      updateNested("currentRatings", key, value)
+                    }
+                  />
                 </>
               )}
-            </div>
-          </FormSection>
 
-          <FormSection number="3" title="Reviews Summary">
-            <p style={styles.helpText}>
-              Log the number of reviews received each day, broken down by star rating.
-            </p>
+              {config.monthlyPlatforms && (
+                <>
+                  <h3 style={styles.subTitle}>Platform Ratings for the Month</h3>
+                  <RatingRows
+                    rows={config.monthlyPlatforms}
+                    values={form.monthlyRatings}
+                    onChange={(key, value) =>
+                      updateNested("monthlyRatings", key, value)
+                    }
+                  />
+                </>
+              )}
+            </FormSection>
+          )}
 
-            <div style={styles.tableWrap}>
-              <table style={styles.table}>
-                <thead>
-                  <tr>
-                    {["Day", "Reviews", "1 Star", "2 Star", "3 Star", "4 Star", "5 Star"].map((h) => (
-                      <th key={h} style={styles.th}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
+          {config.scoreLabels && (
+            <FormSection number="2" title="Platform Ratings Uber">
+              <RatingRows
+                rows={config.scoreLabels}
+                values={form.uberScores}
+                onChange={(key, value) =>
+                  updateNested("uberScores", key, value)
+                }
+              />
+            </FormSection>
+          )}
 
-                <tbody>
-                  {days.map((day) => (
-                    <tr key={day}>
-                      <td style={styles.dayCell}>{day}</td>
-                      {["reviews", "one", "two", "three", "four", "five"].map((field) => (
-                        <td style={styles.td} key={field}>
-                          <input
-                            style={styles.tableInput}
-                            type="number"
-                            min="0"
-                            value={form.reviews[day][field]}
-                            onChange={(e) => updateReview(day, field, e.target.value)}
-                          />
-                        </td>
+          {config.errorLabels.length > 0 && (
+            <FormSection number="3" title="Uber Error Rate">
+              <p style={styles.helpText}>
+                Enter the Uber error rate information from the Uber restaurant
+                platform.
+              </p>
+
+              <RatingRows
+                rows={config.errorLabels}
+                values={form.errorRates}
+                onChange={(key, value) =>
+                  updateNested("errorRates", key, value)
+                }
+              />
+            </FormSection>
+          )}
+
+          {config.showReviews && (
+            <FormSection number="4" title="Reviews Summary">
+              <p style={styles.helpText}>
+                Log the number of reviews received each day, broken down by star
+                rating.
+              </p>
+
+              <div style={styles.tableWrap}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      {[
+                        "Day",
+                        "Reviews",
+                        "1 Star",
+                        "2 Star",
+                        "3 Star",
+                        "4 Star",
+                        "5 Star",
+                      ].map((h) => (
+                        <th key={h} style={styles.th}>
+                          {h}
+                        </th>
                       ))}
                     </tr>
-                  ))}
+                  </thead>
 
-                  <tr style={styles.totalRow}>
-                    <td style={styles.dayCell}>Totals</td>
-                    <td style={styles.td}>{totals.reviews}</td>
-                    <td style={styles.td}>{totals.one}</td>
-                    <td style={styles.td}>{totals.two}</td>
-                    <td style={styles.td}>{totals.three}</td>
-                    <td style={styles.td}>{totals.four}</td>
-                    <td style={styles.td}>{totals.five}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </FormSection>
+                  <tbody>
+                    {days.map((day) => (
+                      <tr key={day}>
+                        <td style={styles.dayCell}>{day}</td>
 
-          <FormSection number="4" title="Weekly Reflection and Planning">
-            <TextArea label="Have all reviews been replied to?" value={form.allReviewsReplied} onChange={(v) => updateField("allReviewsReplied", v)} />
-            <TextArea label="What went well this week?" value={form.wentWell} onChange={(v) => updateField("wentWell", v)} />
-            <TextArea label="What didn’t go well?" value={form.didntGoWell} onChange={(v) => updateField("didntGoWell", v)} />
-            <TextArea label="What areas need improvement?" value={form.improvements} onChange={(v) => updateField("improvements", v)} />
-            <TextArea label="Action plan for next week" value={form.actionPlan} onChange={(v) => updateField("actionPlan", v)} />
+                        {[
+                          "reviews",
+                          "one",
+                          "two",
+                          "three",
+                          "four",
+                          "five",
+                        ].map((field) => (
+                          <td style={styles.td} key={field}>
+                            <input
+                              style={styles.tableInput}
+                              type="number"
+                              min="0"
+                              value={form.reviews[day][field]}
+                              onChange={(e) =>
+                                updateReview(day, field, e.target.value)
+                              }
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+
+                    <tr style={styles.totalRow}>
+                      <td style={styles.dayCell}>Totals</td>
+                      <td style={styles.td}>{totals.reviews}</td>
+                      <td style={styles.td}>{totals.one}</td>
+                      <td style={styles.td}>{totals.two}</td>
+                      <td style={styles.td}>{totals.three}</td>
+                      <td style={styles.td}>{totals.four}</td>
+                      <td style={styles.td}>{totals.five}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </FormSection>
+          )}
+
+          <FormSection
+            number={config.showReviews ? "5" : "4"}
+            title="Weekly Reflection and Planning"
+          >
+            {config.reviewReplyQuestion && (
+              <TextArea
+                label="Have all reviews been replied to?"
+                helper="Use Nory to reply to Google reviews. Trip Advisor needs to be replied to directly."
+                value={form.allReviewsReplied}
+                onChange={(v) => updateField("allReviewsReplied", v)}
+              />
+            )}
+
+            <TextArea
+              label="What went well this week?"
+              helper="Identify successes such as high-performing days, positive feedback, or operational wins."
+              value={form.wentWell}
+              onChange={(v) => updateField("wentWell", v)}
+            />
+
+            <TextArea
+              label="What didn’t go well?"
+              helper="Highlight challenges such as staffing issues or negative feedback. What have we done to address the issue?"
+              value={form.didntGoWell}
+              onChange={(v) => updateField("didntGoWell", v)}
+            />
+
+            <TextArea
+              label="What areas need improvement?"
+              helper="Pinpoint specific areas such as site cleaning, speed of service, or customer attentiveness."
+              value={form.improvements}
+              onChange={(v) => updateField("improvements", v)}
+            />
+
+            <TextArea
+              label="What is your action plan for next week?"
+              helper="Write down concrete steps to address improvements and build on strengths."
+              value={form.actionPlan}
+              onChange={(v) => updateField("actionPlan", v)}
+            />
           </FormSection>
         </main>
 
         <div style={styles.actions}>
-          <button onClick={sendEmail} style={styles.primaryButton}>Email Report</button>
-          <button onClick={downloadPDF} style={styles.secondaryButton}>Download PDF</button>
+          <button onClick={downloadPDF} style={styles.primaryButton}>
+            Download / Save PDF
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+function RatingRows({ rows, values, onChange }) {
+  return (
+    <div style={styles.ratingBox} className="ratingBox">
+      {rows.map((row) => (
+        <div style={styles.ratingRow} key={row}>
+          <strong>{row}</strong>
+          <input
+            style={styles.input}
+            value={values[row] || ""}
+            onChange={(e) => onChange(row, e.target.value)}
+            placeholder="Enter score / rating"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function FormSection({ number, title, children }) {
   return (
-    <section style={styles.section}>
+    <section style={styles.section} className="section">
       <div style={styles.sectionHeader}>
         <span style={styles.number}>{number}</span>
         <h2 style={styles.sectionTitle}>{title}</h2>
       </div>
+
       {children}
     </section>
   );
@@ -318,11 +473,17 @@ function Field({ label, children }) {
   );
 }
 
-function TextArea({ label, value, onChange }) {
+function TextArea({ label, helper, value, onChange }) {
   return (
-    <label style={styles.field}>
+    <label style={styles.field} className="reflectionBox">
       <span style={styles.label}>{label}</span>
-      <textarea style={styles.textarea} value={value} onChange={(e) => onChange(e.target.value)} rows="4" />
+      {helper && <span style={styles.helper}>{helper}</span>}
+      <textarea
+        style={styles.textarea}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows="4"
+      />
     </label>
   );
 }
@@ -335,10 +496,12 @@ const styles = {
     fontFamily: "Arial, Helvetica, sans-serif",
     color: "#171717",
   },
+
   wrapper: {
     maxWidth: 1050,
     margin: "0 auto",
   },
+
   header: {
     background: "#111",
     color: "white",
@@ -349,6 +512,7 @@ const styles = {
     alignItems: "center",
     gap: 18,
   },
+
   logo: {
     width: 60,
     height: 60,
@@ -361,45 +525,44 @@ const styles = {
     fontSize: 20,
     flexShrink: 0,
   },
+
   title: {
     margin: 0,
     fontSize: 32,
     lineHeight: 1.1,
   },
+
   subtitle: {
     margin: "8px 0 0",
     color: "#ddd",
     fontSize: 15,
     lineHeight: 1.5,
   },
-  success: {
-    background: "#e9f8ed",
-    color: "#126b2f",
-    border: "1px solid #bfe6c9",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    fontWeight: 700,
-  },
+
   card: {
     background: "white",
     borderRadius: 18,
     padding: 22,
     boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
   },
+
   section: {
     border: "1px solid #e2d4bf",
     borderRadius: 14,
     padding: 20,
-    marginBottom: 18,
+    marginBottom: 20,
     background: "#fffdf9",
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
   },
+
   sectionHeader: {
     display: "flex",
     alignItems: "center",
     gap: 12,
     marginBottom: 16,
   },
+
   number: {
     width: 32,
     height: 32,
@@ -410,10 +573,17 @@ const styles = {
     placeItems: "center",
     fontWeight: 900,
   },
+
   sectionTitle: {
     margin: 0,
     fontSize: 22,
   },
+
+  subTitle: {
+    margin: "10px 0",
+    fontSize: 17,
+  },
+
   helpText: {
     marginTop: -4,
     marginBottom: 16,
@@ -421,21 +591,33 @@ const styles = {
     fontSize: 14,
     lineHeight: 1.5,
   },
+
+  helper: {
+    color: "#666",
+    fontSize: 13,
+    lineHeight: 1.4,
+  },
+
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: 14,
   },
+
   field: {
     display: "grid",
     gap: 6,
     marginBottom: 14,
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
   },
+
   label: {
     fontWeight: 800,
     fontSize: 14,
     color: "#333",
   },
+
   input: {
     width: "100%",
     boxSizing: "border-box",
@@ -446,6 +628,7 @@ const styles = {
     background: "white",
     outlineColor: "#f6b900",
   },
+
   textarea: {
     width: "100%",
     boxSizing: "border-box",
@@ -457,44 +640,79 @@ const styles = {
     fontFamily: "Arial",
     background: "white",
     outlineColor: "#f6b900",
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
   },
+
+  ratingBox: {
+    display: "grid",
+    gap: 10,
+    marginBottom: 20,
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
+  },
+
+  ratingRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(180px, 260px) 1fr",
+    gap: 12,
+    alignItems: "center",
+  },
+
   tableWrap: {
-    overflowX: "auto",
+    overflowX: "visible",
+    width: "100%",
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
   },
+
   table: {
     width: "100%",
     borderCollapse: "collapse",
-    minWidth: 760,
+    tableLayout: "fixed",
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
   },
+
   th: {
     background: "#111",
     color: "white",
-    padding: 11,
+    padding: 6,
     textAlign: "center",
-    fontSize: 14,
+    fontSize: 10,
   },
+
   td: {
     border: "1px solid #e2d4bf",
-    padding: 8,
+    padding: 4,
     textAlign: "center",
+    fontSize: 10,
   },
+
   dayCell: {
     border: "1px solid #e2d4bf",
-    padding: 10,
+    padding: 5,
     fontWeight: 800,
     background: "#fbf5eb",
+    fontSize: 10,
   },
+
   tableInput: {
-    width: 68,
-    padding: 8,
-    borderRadius: 7,
+    width: "100%",
+    maxWidth: 50,
+    padding: 4,
+    borderRadius: 4,
     border: "1px solid #cdbfa8",
     textAlign: "center",
+    fontSize: 10,
+    boxSizing: "border-box",
   },
+
   totalRow: {
     background: "#fff1bc",
     fontWeight: 800,
   },
+
   actions: {
     position: "sticky",
     bottom: 0,
@@ -504,19 +722,10 @@ const styles = {
     gap: 10,
     flexWrap: "wrap",
   },
+
   primaryButton: {
     background: "#111",
     color: "white",
-    border: "none",
-    borderRadius: 10,
-    padding: "15px 24px",
-    fontSize: 16,
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    background: "#f6b900",
-    color: "#111",
     border: "none",
     borderRadius: 10,
     padding: "15px 24px",
