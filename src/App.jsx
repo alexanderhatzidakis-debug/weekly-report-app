@@ -269,7 +269,9 @@ export default function App() {
 
               {config.monthlyPlatforms && (
                 <>
-                  <h3 style={styles.subTitle}>Platform Ratings for the Month</h3>
+                  <h3 style={styles.subTitle}>
+                    Platform Ratings for the Month
+                  </h3>
                   <RatingRows
                     rows={config.monthlyPlatforms}
                     values={form.monthlyRatings}
@@ -438,15 +440,15 @@ function RatingRows({ rows, values, onChange }) {
   return (
     <div style={styles.ratingBox} className="ratingBox">
       {rows.map((row) => (
-        <div style={styles.ratingRow} key={row}>
-          <strong>{row}</strong>
+        <label style={styles.ratingRow} key={row}>
+          <strong style={styles.ratingLabel}>{row}</strong>
           <input
-            style={styles.input}
+            style={styles.ratingInput}
             value={values[row] || ""}
             onChange={(e) => onChange(row, e.target.value)}
             placeholder="Enter score / rating"
           />
-        </div>
+        </label>
       ))}
     </div>
   );
@@ -494,7 +496,7 @@ const styles = {
   page: {
     minHeight: "100vh",
     background: "#f4efe7",
-    padding: 22,
+    padding: 14,
     fontFamily: "Arial, Helvetica, sans-serif",
     color: "#171717",
   },
@@ -508,29 +510,29 @@ const styles = {
     background: "#111",
     color: "white",
     borderRadius: 18,
-    padding: 24,
+    padding: 20,
     marginBottom: 18,
     display: "flex",
     alignItems: "center",
-    gap: 18,
+    gap: 14,
   },
 
   logo: {
-    width: 60,
-    height: 60,
+    width: 56,
+    height: 56,
     borderRadius: 14,
     background: "#f6b900",
     color: "#111",
     display: "grid",
     placeItems: "center",
     fontWeight: 900,
-    fontSize: 20,
+    fontSize: 18,
     flexShrink: 0,
   },
 
   title: {
     margin: 0,
-    fontSize: 32,
+    fontSize: "clamp(24px, 6vw, 32px)",
     lineHeight: 1.1,
   },
 
@@ -544,14 +546,14 @@ const styles = {
   card: {
     background: "white",
     borderRadius: 18,
-    padding: 22,
+    padding: 14,
     boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
   },
 
   section: {
     border: "1px solid #e2d4bf",
     borderRadius: 14,
-    padding: 20,
+    padding: 16,
     marginBottom: 20,
     background: "#fffdf9",
     breakInside: "avoid",
@@ -574,29 +576,31 @@ const styles = {
     display: "grid",
     placeItems: "center",
     fontWeight: 900,
+    flexShrink: 0,
   },
 
   sectionTitle: {
     margin: 0,
-    fontSize: 22,
+    fontSize: "clamp(22px, 6vw, 30px)",
   },
 
   subTitle: {
-    margin: "10px 0",
-    fontSize: 17,
+    margin: "16px 0 12px",
+    fontSize: "clamp(18px, 5vw, 24px)",
+    textAlign: "left",
   },
 
   helpText: {
     marginTop: -4,
     marginBottom: 16,
     color: "#666",
-    fontSize: 14,
+    fontSize: 15,
     lineHeight: 1.5,
   },
 
   helper: {
     color: "#666",
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 1.4,
   },
 
@@ -608,26 +612,60 @@ const styles = {
 
   field: {
     display: "grid",
-    gap: 6,
-    marginBottom: 14,
+    gap: 7,
+    marginBottom: 16,
     breakInside: "avoid",
     pageBreakInside: "avoid",
   },
 
   label: {
     fontWeight: 800,
-    fontSize: 14,
+    fontSize: 15,
     color: "#333",
   },
 
   input: {
     width: "100%",
     boxSizing: "border-box",
-    padding: "14px 15px",
-    minHeight: 48,
+    padding: "15px 15px",
+    minHeight: 52,
     borderRadius: 10,
     border: "1px solid #cdbfa8",
     fontSize: 16,
+    background: "#ffffff",
+    color: "#111111",
+    outlineColor: "#f6b900",
+  },
+
+  ratingBox: {
+    display: "grid",
+    gap: 16,
+    marginBottom: 24,
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
+  },
+
+  ratingRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(160px, 260px) 1fr",
+    gap: 14,
+    alignItems: "center",
+  },
+
+  ratingLabel: {
+    fontSize: 17,
+    fontWeight: 900,
+    color: "#333",
+  },
+
+  ratingInput: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "15px 15px",
+    minHeight: 54,
+    borderRadius: 10,
+    border: "1px solid #cdbfa8",
+    fontSize: 17,
     background: "#ffffff",
     color: "#111111",
     outlineColor: "#f6b900",
@@ -637,7 +675,7 @@ const styles = {
     width: "100%",
     boxSizing: "border-box",
     padding: 14,
-    minHeight: 130,
+    minHeight: 140,
     borderRadius: 10,
     border: "1px solid #cdbfa8",
     fontSize: 16,
@@ -651,23 +689,8 @@ const styles = {
     pageBreakInside: "avoid",
   },
 
-  ratingBox: {
-    display: "grid",
-    gap: 10,
-    marginBottom: 20,
-    breakInside: "avoid",
-    pageBreakInside: "avoid",
-  },
-
-  ratingRow: {
-    display: "grid",
-    gridTemplateColumns: "minmax(180px, 260px) 1fr",
-    gap: 12,
-    alignItems: "center",
-  },
-
   tableWrap: {
-    overflowX: "visible",
+    overflowX: "auto",
     width: "100%",
     breakInside: "avoid",
     pageBreakInside: "avoid",
@@ -677,6 +700,7 @@ const styles = {
     width: "100%",
     borderCollapse: "collapse",
     tableLayout: "fixed",
+    minWidth: 620,
     breakInside: "avoid",
     pageBreakInside: "avoid",
   },
@@ -742,5 +766,6 @@ const styles = {
     fontSize: 16,
     fontWeight: 800,
     cursor: "pointer",
+    width: "100%",
   },
 };
