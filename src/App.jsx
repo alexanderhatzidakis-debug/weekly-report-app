@@ -212,6 +212,7 @@ export default function App() {
                   style={styles.input}
                   value={form.manager}
                   onChange={(e) => updateField("manager", e.target.value)}
+                  placeholder="Enter manager name"
                 />
               </Field>
 
@@ -482,7 +483,8 @@ function TextArea({ label, helper, value, onChange }) {
         style={styles.textarea}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        rows="4"
+        rows="5"
+        placeholder="Type your answer here..."
       />
     </label>
   );
@@ -621,11 +623,13 @@ const styles = {
   input: {
     width: "100%",
     boxSizing: "border-box",
-    padding: "13px 14px",
+    padding: "14px 15px",
+    minHeight: 48,
     borderRadius: 10,
     border: "1px solid #cdbfa8",
-    fontSize: 15,
-    background: "white",
+    fontSize: 16,
+    background: "#ffffff",
+    color: "#111111",
     outlineColor: "#f6b900",
   },
 
@@ -633,12 +637,15 @@ const styles = {
     width: "100%",
     boxSizing: "border-box",
     padding: 14,
+    minHeight: 130,
     borderRadius: 10,
     border: "1px solid #cdbfa8",
-    fontSize: 15,
+    fontSize: 16,
+    lineHeight: 1.5,
     resize: "vertical",
     fontFamily: "Arial",
-    background: "white",
+    background: "#ffffff",
+    color: "#111111",
     outlineColor: "#f6b900",
     breakInside: "avoid",
     pageBreakInside: "avoid",
@@ -699,13 +706,16 @@ const styles = {
 
   tableInput: {
     width: "100%",
-    maxWidth: 50,
-    padding: 4,
+    maxWidth: 55,
+    minHeight: 34,
+    padding: 5,
     borderRadius: 4,
     border: "1px solid #cdbfa8",
     textAlign: "center",
-    fontSize: 10,
+    fontSize: 12,
     boxSizing: "border-box",
+    background: "#ffffff",
+    color: "#111111",
   },
 
   totalRow: {
