@@ -155,6 +155,17 @@ export default function App() {
   }
 
   function downloadPDF() {
+    const textareas = reportRef.current.querySelectorAll("textarea");
+    const printTexts = reportRef.current.querySelectorAll(".printText");
+
+    textareas.forEach((textarea) => {
+      textarea.style.display = "none";
+    });
+
+    printTexts.forEach((box) => {
+      box.style.display = "block";
+    });
+
     const filename = `${form.reportType || "Report"} Report - ${
       form.site || "Site"
     } - ${form.week || "Week"}.pdf`;
@@ -184,7 +195,16 @@ export default function App() {
         },
       })
       .from(reportRef.current)
-      .save();
+      .save()
+      .then(() => {
+        textareas.forEach((textarea) => {
+          textarea.style.display = "";
+        });
+
+        printTexts.forEach((box) => {
+          box.style.display = "none";
+        });
+      });
   }
 
   return (
@@ -481,6 +501,7 @@ function TextArea({ label, helper, value, onChange }) {
     <label style={styles.field} className="reflectionBox">
       <span style={styles.label}>{label}</span>
       {helper && <span style={styles.helper}>{helper}</span>}
+
       <textarea
         style={styles.textarea}
         value={value}
@@ -488,6 +509,10 @@ function TextArea({ label, helper, value, onChange }) {
         rows="5"
         placeholder="Type your answer here..."
       />
+
+      <div style={styles.printText} className="printText">
+        {value}
+      </div>
     </label>
   );
 }
@@ -685,6 +710,25 @@ const styles = {
     background: "#ffffff",
     color: "#111111",
     outlineColor: "#f6b900",
+    breakInside: "avoid",
+    pageBreakInside: "avoid",
+  },
+
+  printText: {
+    display: "none",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    overflowWrap: "break-word",
+    boxSizing: "border-box",
+    padding: 14,
+    minHeight: 140,
+    borderRadius: 10,
+    border: "1px solid #cdbfa8",
+    fontSize: 16,
+    lineHeight: 1.5,
+    fontFamily: "Arial",
+    background: "#ffffff",
+    color: "#111111",
     breakInside: "avoid",
     pageBreakInside: "avoid",
   },
