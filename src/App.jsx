@@ -215,7 +215,11 @@ export default function App() {
             <h3 style={styles.subTitle}>Platform Ratings for the Month</h3>
 
             <RatingRows
-              rows={["Google", "Trip Advisor", "Uber"]}
+              rows={[
+                "Google / TripAdvisor Score",
+                "How many Google / TripAdvisor reviews have you got this month?",
+                "Uber",
+              ]}
               values={form.monthlyRatings}
               onChange={(key, value) =>
                 updateNested("monthlyRatings", key, value)
@@ -300,8 +304,7 @@ export default function App() {
               </table>
             </div>
           </FormSection>
-
-          <FormSection number="5" title="Weekly Reflection and Planning">
+                    <FormSection number="5" title="Weekly Reflection and Planning">
             <TextArea
               label="Have all reviews been replied to?"
               helper="Use Nory to reply to Google reviews. Trip Advisor needs to be replied to directly."
