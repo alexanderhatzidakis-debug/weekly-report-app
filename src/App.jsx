@@ -10,8 +10,6 @@ const sites = [
   "Bare Bones Canterbury",
 ];
 
-const reportTypes = ["FOH", "GM", "BOH", "Online"];
-
 const days = [
   "Monday",
   "Tuesday",
@@ -35,61 +33,6 @@ const emptyReviews = () =>
     return acc;
   }, {});
 
-const reportConfig = {
-  FOH: {
-    intro: "Google and Trip Advisor weekly front of house report.",
-    currentPlatforms: ["Google", "Trip Advisor"],
-    monthlyPlatforms: ["Google", "Trip Advisor"],
-    errorLabels: [],
-    showReviews: false,
-    reviewReplyQuestion: true,
-  },
-
-  GM: {
-    intro:
-      "General manager report covering public ratings, Uber error rate and review summary.",
-    currentPlatforms: ["Google", "Trip Advisor", "Uber"],
-    monthlyPlatforms: ["Google", "Trip Advisor", "Uber"],
-    errorLabels: ["This month error rate"],
-    showReviews: true,
-    reviewReplyQuestion: true,
-  },
-
-  BOH: {
-    intro: "Back of house Uber ratings and error rate report.",
-    scoreLabels: [
-      "Overall public score",
-      "This week’s score",
-      "Last week’s report score",
-      "This month score",
-    ],
-    errorLabels: [
-      "This week’s score",
-      "Last week’s report score",
-      "This month score",
-    ],
-    showReviews: false,
-    reviewReplyQuestion: false,
-  },
-
-  Online: {
-    intro: "Online Uber platform ratings and error rate report.",
-    scoreLabels: [
-      "Overall public score",
-      "This week’s score",
-      "Last week’s report score",
-      "This month score",
-    ],
-    errorLabels: [
-      "This week’s error rate",
-      "Last week’s report error rate",
-      "This month error rate",
-    ],
-    showReviews: false,
-    reviewReplyQuestion: true,
-  },
-};
-
 export default function App() {
   const reportRef = useRef(null);
 
@@ -97,10 +40,8 @@ export default function App() {
     manager: "",
     site: "",
     week: "",
-    reportType: "FOH",
     currentRatings: {},
     monthlyRatings: {},
-    uberScores: {},
     errorRates: {},
     reviews: emptyReviews(),
     allReviewsReplied: "",
@@ -109,8 +50,6 @@ export default function App() {
     improvements: "",
     actionPlan: "",
   });
-
-  const config = reportConfig[form.reportType];
 
   const totals = useMemo(() => {
     return Object.values(form.reviews).reduce(
@@ -166,9 +105,9 @@ export default function App() {
       box.style.display = "block";
     });
 
-    const filename = `${form.reportType || "Report"} Report - ${
-      form.site || "Site"
-    } - ${form.week || "Week"}.pdf`;
+    const filename = `GM Report - ${form.site || "Site"} - ${
+      form.week || "Week"
+    }.pdf`;
 
     html2pdf()
       .set({
@@ -214,17 +153,19 @@ export default function App() {
           <div style={styles.logo}>C&B</div>
 
           <div>
-            <h1 style={styles.title}>Weekly Performance Report</h1>
+            <h1 style={styles.title}>GM Weekly Performance Report</h1>
             <p style={styles.subtitle}>
-              Select the site, choose the report type, complete each section,
-              then save as PDF.
+              Complete the weekly GM report, then save as PDF.
             </p>
           </div>
         </header>
 
         <main ref={reportRef} style={styles.card}>
           <FormSection number="1" title="Report Details">
-            <p style={styles.helpText}>{config.intro}</p>
+            <p style={styles.helpText}>
+              General manager report covering public ratings, Uber error rate
+              and review summary.
+            </p>
 
             <div style={styles.grid}>
               <Field label="Manager Name">
@@ -257,122 +198,79 @@ export default function App() {
                   onChange={(e) => updateField("week", e.target.value)}
                 />
               </Field>
-
-              <Field label="Report Type">
-                <select
-                  style={styles.input}
-                  value={form.reportType}
-                  onChange={(e) => updateField("reportType", e.target.value)}
-                >
-                  {reportTypes.map((type) => (
-                    <option key={type}>{type}</option>
-                  ))}
-                </select>
-              </Field>
             </div>
           </FormSection>
 
-          {(config.currentPlatforms || config.monthlyPlatforms) && (
-            <FormSection number="2" title="Platform Ratings">
-              {config.currentPlatforms && (
-                <>
-                  <h3 style={styles.subTitle}>Current Overall Ratings</h3>
-                  <RatingRows
-                    rows={config.currentPlatforms}
-                    values={form.currentRatings}
-                    onChange={(key, value) =>
-                      updateNested("currentRatings", key, value)
-                    }
-                  />
-                </>
-              )}
+          <FormSection number="2" title="Platform Ratings">
+            <h3 style={styles.subTitle}>Current Overall Ratings</h3>
 
-              {config.monthlyPlatforms && (
-                <>
-                  <h3 style={styles.subTitle}>
-                    Platform Ratings for the Month
-                  </h3>
-                  <RatingRows
-                    rows={config.monthlyPlatforms}
-                    values={form.monthlyRatings}
-                    onChange={(key, value) =>
-                      updateNested("monthlyRatings", key, value)
-                    }
-                  />
-                </>
-              )}
-            </FormSection>
-          )}
+            <RatingRows
+              rows={["Google", "Trip Advisor", "Uber"]}
+              values={form.currentRatings}
+              onChange={(key, value) =>
+                updateNested("currentRatings", key, value)
+              }
+            />
 
-          {config.scoreLabels && (
-            <FormSection number="2" title="Platform Ratings Uber">
-              <RatingRows
-                rows={config.scoreLabels}
-                values={form.uberScores}
-                onChange={(key, value) =>
-                  updateNested("uberScores", key, value)
-                }
-              />
-            </FormSection>
-          )}
+            <h3 style={styles.subTitle}>Platform Ratings for the Month</h3>
 
-          {config.errorLabels.length > 0 && (
-            <FormSection number="3" title="Uber Error Rate">
-              <p style={styles.helpText}>
-                Enter the Uber error rate information from the Uber restaurant
-                platform.
-              </p>
+            <RatingRows
+              rows={["Google", "Trip Advisor", "Uber"]}
+              values={form.monthlyRatings}
+              onChange={(key, value) =>
+                updateNested("monthlyRatings", key, value)
+              }
+            />
+          </FormSection>
 
-              <RatingRows
-                rows={config.errorLabels}
-                values={form.errorRates}
-                onChange={(key, value) =>
-                  updateNested("errorRates", key, value)
-                }
-              />
-            </FormSection>
-          )}
+          <FormSection number="3" title="Uber Error Rate">
+            <p style={styles.helpText}>
+              Enter the Uber error rate information from the Uber restaurant
+              platform.
+            </p>
 
-          {config.showReviews && (
-            <FormSection number="4" title="Reviews Summary">
-              <p style={styles.helpText}>
-                Log the number of reviews received each day, broken down by star
-                rating.
-              </p>
+            <RatingRows
+              rows={["This month error rate"]}
+              values={form.errorRates}
+              onChange={(key, value) =>
+                updateNested("errorRates", key, value)
+              }
+            />
+          </FormSection>
 
-              <div style={styles.tableWrap}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      {[
-                        "Day",
-                        "Reviews",
-                        "1 Star",
-                        "2 Star",
-                        "3 Star",
-                        "4 Star",
-                        "5 Star",
-                      ].map((h) => (
-                        <th key={h} style={styles.th}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
+          <FormSection number="4" title="Reviews Summary">
+            <p style={styles.helpText}>
+              Log the number of reviews received each day, broken down by star
+              rating.
+            </p>
 
-                  <tbody>
-                    {days.map((day) => (
-                      <tr key={day}>
-                        <td style={styles.dayCell}>{day}</td>
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    {[
+                      "Day",
+                      "Reviews",
+                      "1 Star",
+                      "2 Star",
+                      "3 Star",
+                      "4 Star",
+                      "5 Star",
+                    ].map((h) => (
+                      <th key={h} style={styles.th}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
 
-                        {[
-                          "reviews",
-                          "one",
-                          "two",
-                          "three",
-                          "four",
-                          "five",
-                        ].map((field) => (
+                <tbody>
+                  {days.map((day) => (
+                    <tr key={day}>
+                      <td style={styles.dayCell}>{day}</td>
+
+                      {["reviews", "one", "two", "three", "four", "five"].map(
+                        (field) => (
                           <td style={styles.td} key={field}>
                             <input
                               style={styles.tableInput}
@@ -384,37 +282,32 @@ export default function App() {
                               }
                             />
                           </td>
-                        ))}
-                      </tr>
-                    ))}
-
-                    <tr style={styles.totalRow}>
-                      <td style={styles.dayCell}>Totals</td>
-                      <td style={styles.td}>{totals.reviews}</td>
-                      <td style={styles.td}>{totals.one}</td>
-                      <td style={styles.td}>{totals.two}</td>
-                      <td style={styles.td}>{totals.three}</td>
-                      <td style={styles.td}>{totals.four}</td>
-                      <td style={styles.td}>{totals.five}</td>
+                        )
+                      )}
                     </tr>
-                  </tbody>
-                </table>
-              </div>
-            </FormSection>
-          )}
+                  ))}
 
-          <FormSection
-            number={config.showReviews ? "5" : "4"}
-            title="Weekly Reflection and Planning"
-          >
-            {config.reviewReplyQuestion && (
-              <TextArea
-                label="Have all reviews been replied to?"
-                helper="Use Nory to reply to Google reviews. Trip Advisor needs to be replied to directly."
-                value={form.allReviewsReplied}
-                onChange={(v) => updateField("allReviewsReplied", v)}
-              />
-            )}
+                  <tr style={styles.totalRow}>
+                    <td style={styles.dayCell}>Totals</td>
+                    <td style={styles.td}>{totals.reviews}</td>
+                    <td style={styles.td}>{totals.one}</td>
+                    <td style={styles.td}>{totals.two}</td>
+                    <td style={styles.td}>{totals.three}</td>
+                    <td style={styles.td}>{totals.four}</td>
+                    <td style={styles.td}>{totals.five}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </FormSection>
+
+          <FormSection number="5" title="Weekly Reflection and Planning">
+            <TextArea
+              label="Have all reviews been replied to?"
+              helper="Use Nory to reply to Google reviews. Trip Advisor needs to be replied to directly."
+              value={form.allReviewsReplied}
+              onChange={(v) => updateField("allReviewsReplied", v)}
+            />
 
             <TextArea
               label="What went well this week?"
@@ -425,21 +318,21 @@ export default function App() {
 
             <TextArea
               label="What didn’t go well?"
-              helper="Highlight challenges such as staffing issues or negative feedback. What have we done to address the issue?"
+              helper="Highlight challenges such as staffing issues, poor scores, service problems, or negative feedback. Include what has been done to address the issue."
               value={form.didntGoWell}
               onChange={(v) => updateField("didntGoWell", v)}
             />
 
             <TextArea
               label="What areas need improvement?"
-              helper="Pinpoint specific areas such as site cleaning, speed of service, or customer attentiveness."
+              helper="Pinpoint specific areas such as cleaning, speed of service, food quality, staff training, customer attentiveness, or review response times."
               value={form.improvements}
               onChange={(v) => updateField("improvements", v)}
             />
 
             <TextArea
               label="What is your action plan for next week?"
-              helper="Write down concrete steps to address improvements and build on strengths."
+              helper="Write down clear actions, who is responsible, and when they need to be completed."
               value={form.actionPlan}
               onChange={(v) => updateField("actionPlan", v)}
             />
